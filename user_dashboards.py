@@ -1,0 +1,71 @@
+#!/usr/bin/env python
+# /// script
+# requires-python = ">=3.8"
+# dependencies = [
+#     "click",
+#     "grafana-client",
+#     "python-dotenv",
+# ]
+# ///
+
+import json
+import os
+
+import click
+from dotenv import load_dotenv
+from grafana_client import GrafanaApi, TokenAuth
+
+
+load_dotenv()
+
+
+GRAFANA_URL = os.getenv("GRAFANA_URL")
+GRAFANA_TOKEN = os.getenv("GRAFANA_TOKEN")
+
+
+@click.command
+@click.option("--verbose/--no-verbose", default=False)
+@click.argument("user")
+@click.pass_context
+def main(ctx, verbose, user):
+    data_path = "dashboard_data.json"
+    if not os.path.exists(data_path):
+        data = []
+        click.echo(f"Generating dashboard_data.json ...")
+        click.echo(f"Using: {GRAFANA_URL}")
+        click.echo(f"Using: {'*' * (len(GRAFANA_TOKEN) - 4)}{GRAFANA_TOKEN[-4:]}")
+        grafana = GrafanaApi.from_url(
+            url=GRAFANA_URL, 
+            credential=TokenAuth(token=GRAFANA_TOKEN)
+        )
+
+        dashboards = grafana.search.search_dashboards()
+        for item in dashboards:
+            dashboard_id = item["id"]
+            item["versionData"] = []
+
+            versions = grafana.dashboard_versions.get_dashboard_versions(dashboard_id=dashboard_id)
+            for version in versions:
+                item["versionData"].append(version)
+            data.append(item)
+
+        with open(data_path, "w") as fp:
+            json.dump(data, fp)
+
+    else:
+        with open(data_path, "r") as fp:
+            data = json.load(fp)
+
+    for item in data:
+        dashboard_id = item["id"]
+        title = item["title"]
+        url = GRAFANA_URL.rstrip("/") + item["url"]
+
+        for version in item["versionData"]:
+            if version["createdBy"].startswith(user):
+                click.echo(f"{dashboard_id}\t{title}\t{url}")
+                break
+
+
+if __name__ == "__main__":
+    main()
