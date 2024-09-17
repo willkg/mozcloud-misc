@@ -9,7 +9,9 @@
 # ]
 # ///
 
-# Usage: uv run build_report.py [OPTIONS]
+# Usage: uv run uptime_checks.py [OPTIONS]
+#
+# Lists all the uptime checks in Pingdom plus some stats.
 
 import json
 import os
