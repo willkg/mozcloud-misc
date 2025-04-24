@@ -263,65 +263,63 @@ def main(ctx, email):
     click.echo(f"Offboarding {email}")
     click.echo("")
 
-    # DeadMansSnitch
-    deadmanssnitch_data = DeadMansSnitchData("deadmanssnitch_users.csv")
-    matches = deadmanssnitch_data.get_matches(pattern=email)
-    click.echo("DeadMansSnitch:")
-    if matches:
-        for user in matches:
-            click.echo(f"  * {user['account']}: {user['case']}")
-    else:
-        click.echo("No account")
-    click.echo("")
-
-    ctx.exit(1)
-
-
     # Yardstick
     yardstick_data = GrafanaData(
         url="https://yardstick.mozilla.org",
         token=YARDSTICK_API_TOKEN,
     )
     yardstick_matches = yardstick_data.get_matches(pattern=email)
-    click.echo("Yardstick:")
     if yardstick_matches:
+        click.echo("Yardstick:")
         for user in yardstick_matches:
             click.echo(f"  * {user['account']}: {user['teams']}")
     else:
-        click.echo("No account")
+        click.echo("Yardstick: No account")
     click.echo("")
 
     # Sentry
     sentry_data = SentryData(url="https://sentry.io", token=SENTRY_API_TOKEN)
     sentry_matches = sentry_data.get_matches(pattern=email)
-    click.echo("Sentry:")
     if sentry_matches:
+        click.echo("Sentry:")
         for user in sentry_matches:
             click.echo(f"  * {user['account']}: {user['teams']}")
     else:
-        click.echo("No account")
+        click.echo("Sentry: No account")
+    click.echo("")
 
     # New Relic
     newrelic_data = NewRelicData(token=NEWRELIC_API_TOKEN_CORPORATION_PRIMARY)
     newrelic_matches = newrelic_data.get_matches(pattern=email)
-    click.echo("New Relic:")
     if newrelic_matches:
+        click.echo("New Relic:")
         for user in newrelic_matches:
             click.echo(f"  * {user['account']}: {user['type']}")
     else:
-        click.echo("No account")
+        click.echo("New Relic: No account")
+    click.echo("")
 
     # SolarWinds
     solarwinds_data = SolarWindsData("solarwinds_users.csv")
     matches = solarwinds_data.get_matches(pattern=email)
-    click.echo("SolarWinds (pingdom / papertrail)")
     if matches:
+        click.echo("SolarWinds (pingdom / papertrail)")
         for user in matches:
             click.echo(f"  * {user['account']}: {user['org']}, {user['role']}")
     else:
-        click.echo("No account")
+        click.echo("SolarWinds (pingdom / papertrail): No account")
+    click.echo("")
 
-    # TODO: DeadMansSnitch
+    # DeadMansSnitch
+    deadmanssnitch_data = DeadMansSnitchData("deadmanssnitch_users.csv")
+    matches = deadmanssnitch_data.get_matches(pattern=email)
+    if matches:
+        click.echo("DeadMansSnitch:")
+        for user in matches:
+            click.echo(f"  * {user['account']}: {user['case']}")
+    else:
+        click.echo("DeadMansSnitch: No account")
+    click.echo("")
 
 
 if __name__ == "__main__":
