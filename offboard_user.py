@@ -281,9 +281,8 @@ class DeadMansSnitchData:
 
 
 @click.command()
-@click.argument("offboard", nargs=-1)
 @click.pass_context
-def main(ctx, offboard):
+def main(ctx):
     providers = {
         "Yardstick": GrafanaData(
             url="https://yardstick.mozilla.org",
@@ -295,29 +294,34 @@ def main(ctx, offboard):
         "DeadMansSnitch": DeadMansSnitchData("deadmanssnitch_users.csv"),
     }
 
-    for item in offboard:
-        click.echo(f"Offboarding {item}")
-        patterns = [item]
-        if "@" in item:
-            patterns.append(item.split("@")[0])
+    while True:
+        to_offboard = click.prompt("Person to offboard")
+        offboard = to_offboard.split(" ")
 
-        # Provider -> list of accounts
-        provider_to_matches = {provider: set() for provider in providers.keys()}
+        for item in offboard:
+            item = item.strip()
+            click.echo(f"Offboarding {item}")
+            patterns = [item]
+            if "@" in item:
+                patterns.append(item.split("@")[0])
 
-        for pattern in patterns:
-            for key, provider in providers.items():
-                for match in provider.get_matches(pattern):
-                    provider_to_matches[key].add(match)
+            # Provider -> list of accounts
+            provider_to_matches = {provider: set() for provider in providers.keys()}
 
-        for provider, matches in provider_to_matches.items():
-            if not matches:
-                click.echo(f"{provider}: no accounts")
-            else:
-                click.echo(provider)
-                for match in matches:
-                    click.echo(f"  * {match}")
+            for pattern in patterns:
+                for key, provider in providers.items():
+                    for match in provider.get_matches(pattern):
+                        provider_to_matches[key].add(match)
 
-        click.echo("")
+            for provider, matches in provider_to_matches.items():
+                if not matches:
+                    click.echo(f"{provider}: no accounts")
+                else:
+                    click.echo(provider)
+                    for match in matches:
+                        click.echo(f"  * {match}")
+
+            click.echo("")
 
 
 if __name__ == "__main__":
