@@ -300,6 +300,9 @@ def main(ctx):
 
         for item in offboard:
             item = item.strip()
+            if not item:
+                continue
+
             click.echo(f"Offboarding {item}")
             patterns = [item]
             if "@" in item:
