@@ -2,14 +2,14 @@
 
 To run:
 
-```
+```shell
 uv run offboard_user.py [EMAIL]
 ```
 
 EMAIL can be a full email address or a partial email address. For example, I
 get tired typing my name, so I could type:
 
-```
+```shell
 uv run offboard_user.py kahn
 ```
 
@@ -18,7 +18,6 @@ address.
 
 It prints out all the services it checked and whether there were accounts and
 properties of the account.
-
 
 ## Maintenance
 
