@@ -1,5 +1,12 @@
 # README
 
+This is a set of MozCloud scripts that I threw together to do various things.
+
+Note: This isn't production-quality.
+
+
+## offboard_user
+
 To run:
 
 ```shell
@@ -19,12 +26,12 @@ address.
 It prints out all the services it checked and whether there were accounts and
 properties of the account.
 
-## Maintenance
+### Maintenance
 
-The `solarwinds_users.csv` file is built manually by copying and pasting from
+The `data/solarwinds_users.csv` file is built manually by copying and pasting from
 the ui. It sucks. We don't have to do it often because we don't create new
 accounts very often (if ever).
 
-The `deadmanssnitch_users.csv` file is also built manually by copying and
+The `data/deadmanssnitch_users.csv` file is also built manually by copying and
 pasting from the ui. It's not bad--takes about 10 minutes. We don't often add
 new accounts, so this is largely static.
