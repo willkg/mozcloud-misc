@@ -25,9 +25,9 @@ It prints out all the services it checked and whether there were accounts and pr
 
 ### Maintenance
 
-The `data/solarwinds_users.csv` file is built manually by copying and pasting from the ui. It stinks. We don't have to do it often because we don't create new accounts very often (if ever).
+The `data_offboard/solarwinds_users.csv` file is built manually by copying and pasting from the ui. It stinks. We don't have to do it often because we don't create new accounts very often (if ever).
 
-The `data/deadmanssnitch_users.csv` file is also built manually by copying and pasting from the ui. It's not bad--takes about 10 minutes. We don't often add new accounts, so this is largely static.
+The `data_offboard/deadmanssnitch_users.csv` file is also built manually by copying and pasting from the ui. It's not bad--takes about 10 minutes. We don't often add new accounts, so this is largely static.
 
 ## Yardstick/Grafana scripts
 

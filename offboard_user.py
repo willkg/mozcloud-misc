@@ -290,8 +290,8 @@ def main(ctx):
         ),
         "Sentry": SentryData(url="https://sentry.io", token=SENTRY_API_TOKEN),
         "NewRelic": NewRelicData(token=NEWRELIC_API_TOKEN_CORPORATION_PRIMARY),
-        "SolarWinds": SolarWindsData("data/solarwinds_users.csv"),
-        "DeadMansSnitch": DeadMansSnitchData("data/deadmanssnitch_users.csv"),
+        "SolarWinds": SolarWindsData("data_offboard/solarwinds_users.csv"),
+        "DeadMansSnitch": DeadMansSnitchData("data_offboard/deadmanssnitch_users.csv"),
     }
 
     while True:

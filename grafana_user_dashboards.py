@@ -35,7 +35,7 @@ GRAFANA_TOKEN = os.getenv("GRAFANA_TOKEN")
 @click.argument("user")
 @click.pass_context
 def main(ctx, verbose, user):
-    data_path = "data/dashboard_data.json"
+    data_path = "data_grafana/dashboard_data.json"
     if not os.path.exists(data_path):
         data = []
         click.echo("Generating dashboard_data.json ...")

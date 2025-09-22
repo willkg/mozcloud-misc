@@ -10,7 +10,7 @@
 
 # Generates rough stats so we have something to compare against.
 #
-# Usage: uv run grafana_stats.py > data/SOMEFILE
+# Usage: uv run grafana_stats.py > data_grafana/SOMEFILE
 
 import os
 

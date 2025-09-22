@@ -1,3 +1,4 @@
 checks/
 .env
-data/
+data_offboard/
+data_grafana/
