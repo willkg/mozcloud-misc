@@ -8,6 +8,13 @@
 # ]
 # ///
 
+
+"""
+Usage: uv run user_dashboards.py [USER]
+
+Lists all the dashboards specified user created or edited.
+"""
+
 import json
 import os
 
@@ -28,10 +35,10 @@ GRAFANA_TOKEN = os.getenv("GRAFANA_TOKEN")
 @click.argument("user")
 @click.pass_context
 def main(ctx, verbose, user):
-    data_path = "dashboard_data.json"
+    data_path = "data/dashboard_data.json"
     if not os.path.exists(data_path):
         data = []
-        click.echo(f"Generating dashboard_data.json ...")
+        click.echo("Generating dashboard_data.json ...")
         click.echo(f"Using: {GRAFANA_URL}")
         click.echo(f"Using: {'*' * (len(GRAFANA_TOKEN) - 4)}{GRAFANA_TOKEN[-4:]}")
         grafana = GrafanaApi.from_url(

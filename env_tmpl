@@ -1,5 +1,0 @@
-# The Grafana instance url
-GRAFANA_URL=
-
-# The Grafana API key
-GRAFANA_TOKEN=

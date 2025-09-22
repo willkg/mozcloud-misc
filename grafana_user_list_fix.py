@@ -2,10 +2,18 @@
 # /// script
 # requires-python = ">=3.12"
 # dependencies = [
-#     "rich",
 #     "click",
+#     "rich",
 # ]
 # ///
+
+"""
+Usage: uv run user_list_fix.py
+
+Reads a `user_list.tsv` file, fixes it, and displays fixed output.
+
+`user_list.tsv` is downloaded from the Grafana interface.
+"""
 
 import click
 from rich.console import Console
@@ -32,7 +40,6 @@ def last_seen_sort_key(item):
 def main(ctx):
     with open("user_list.tsv", "r") as fp:
         lines = fp.readlines()
-
 
     data = [line.strip().split("\t") for line in lines]
 
