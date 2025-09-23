@@ -60,3 +60,21 @@ uv run grafana_user_list_fix.py
 ```
 
 Takes a `user_list.tsv` file downloaded from Grafana, fixes it, and displays the output.
+
+## Sentry scripts
+
+### sentry_error_usage
+
+```shell
+uv run sentry_error_usage.py
+```
+
+Shows last 30 days of Sentry error quota usage by day for the organization.
+
+### sentry_ratelimit_audit
+
+```shell
+uv run sentry_ratelimit_audit.py
+```
+
+Shows all Sentry projects for Mozilla organization, their ratelimit settings, and whether they meet our guidance.
