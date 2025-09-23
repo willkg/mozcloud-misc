@@ -91,8 +91,7 @@ def get_paged_data(session, url):
 
         link_header_next = response.links["next"]
         has_more = (
-            link_header_next["rel"] == "next"
-            and link_header_next["results"] == "true"
+            link_header_next["rel"] == "next" and link_header_next["results"] == "true"
         )
         url = link_header_next["url"]
 
@@ -125,15 +124,12 @@ def cmd_sentry_audit(ctx):
                 project_slug = project["slug"]
                 project_name = project["name"]
                 count_projects.append(project_name)
-                keys_url = (
-                    f"{SENTRY_API_URL}projects/{SENTRY_ORGANIZATION}/{project_slug}/keys/"
-                )
+                keys_url = f"{SENTRY_API_URL}projects/{SENTRY_ORGANIZATION}/{project_slug}/keys/"
                 keys = get_api_data(session, keys_url).json()
 
                 if not keys:
                     click.echo(f"{project_name}    No DSNs found for this project.")
                     continue
-
 
                 # 3. Loop through keys and check for rate limits
                 for key in keys:
@@ -155,7 +151,7 @@ def cmd_sentry_audit(ctx):
                             count_standard_ratelimit.append(project_name)
                         else:
                             count_nonstandard_ratelimit.append(project_name)
-                    
+
                     else:
                         click.secho(f"{project_name}    {dsn}    disabled", fg="red")
                         count_no_ratelimit.append(project_name)

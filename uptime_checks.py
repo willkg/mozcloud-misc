@@ -93,7 +93,9 @@ def main(ctx):
         if "__heartbeat__" in url:
             heartbeat_count += 1
 
-        frequency_counter[check_data["resolution"]] = frequency_counter.get(check_data["resolution"], 0) + 1
+        frequency_counter[check_data["resolution"]] = (
+            frequency_counter.get(check_data["resolution"], 0) + 1
+        )
         tags = [
             "component_*" if tag["name"].startswith("component_") else tag["name"]
             for tag in check_data["tags"]
@@ -105,7 +107,13 @@ def main(ctx):
                 env_counter[env] = env_counter.get(env, 0) + 1
 
         tags_str = ", ".join(tags)
-        row = [str(check_data["id"]), check_data["name"], tags_str, str(check_data["resolution"]), url]
+        row = [
+            str(check_data["id"]),
+            check_data["name"],
+            tags_str,
+            str(check_data["resolution"]),
+            url,
+        ]
         table.add_row(*row)
 
     console.print(table)

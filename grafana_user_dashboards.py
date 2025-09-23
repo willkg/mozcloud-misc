@@ -42,8 +42,7 @@ def main(ctx, verbose, user):
         click.echo(f"Using: {GRAFANA_URL}")
         click.echo(f"Using: {'*' * (len(GRAFANA_TOKEN) - 4)}{GRAFANA_TOKEN[-4:]}")
         grafana = GrafanaApi.from_url(
-            url=GRAFANA_URL, 
-            credential=TokenAuth(token=GRAFANA_TOKEN)
+            url=GRAFANA_URL, credential=TokenAuth(token=GRAFANA_TOKEN)
         )
 
         dashboards = grafana.search.search_dashboards()
@@ -51,7 +50,9 @@ def main(ctx, verbose, user):
             dashboard_id = item["id"]
             item["versionData"] = []
 
-            versions = grafana.dashboard_versions.get_dashboard_versions(dashboard_id=dashboard_id)
+            versions = grafana.dashboard_versions.get_dashboard_versions(
+                dashboard_id=dashboard_id
+            )
             for version in versions:
                 item["versionData"].append(version)
             data.append(item)

@@ -32,8 +32,7 @@ def main(ctx):
     click.echo(f"Using: {GRAFANA_URL}")
     click.echo(f"Using: {'*' * (len(GRAFANA_TOKEN) - 4)}{GRAFANA_TOKEN[-4:]}")
     grafana = GrafanaApi.from_url(
-        url=GRAFANA_URL, 
-        credential=TokenAuth(token=GRAFANA_TOKEN)
+        url=GRAFANA_URL, credential=TokenAuth(token=GRAFANA_TOKEN)
     )
 
     dashboards = grafana.search.search_dashboards()
@@ -65,7 +64,9 @@ def main(ctx):
     click.echo()
     count = len(alert_rules)
     for item in sorted(alert_rules, key=lambda item: item["title"].lower()):
-        click.echo(f"{item['id']}\t{item['title']}\t{item['isPaused']}\t{item['updated']}")
+        click.echo(
+            f"{item['id']}\t{item['title']}\t{item['isPaused']}\t{item['updated']}"
+        )
     click.echo()
     click.echo(f"total: {count}")
 

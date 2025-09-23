@@ -33,7 +33,6 @@ To use this:
 
 """
 
-
 import os
 
 import click
@@ -55,16 +54,14 @@ SENTRY_TOKEN = os.getenv("SENTRY_API_TOKEN")
 @click.command()
 @click.pass_context
 def cmd_sentry_usage(ctx):
-    headers = {
-        "Authorization": f"Bearer {SENTRY_TOKEN}"
-    }
+    headers = {"Authorization": f"Bearer {SENTRY_TOKEN}"}
     params = {
         "statsPeriod": STATS_PERIOD,
         "interval": "1d",
         "field": "sum(quantity)",
         "groupBy": "category",
         "category": "error",
-        "outcome": "accepted"
+        "outcome": "accepted",
     }
 
     stats_url = f"{SENTRY_API_URL}organizations/{SENTRY_ORGANIZATION}/stats_v2/"
@@ -91,7 +88,7 @@ def cmd_sentry_usage(ctx):
         else:
             click.echo("Daily Breakdown of error:")
             # The 'series' object contains a list of totals in order of
-            # timestamps 
+            # timestamps
             totals = error_group_data["totals"]
             for group in totals:
                 for i in range(len(timestamps)):
@@ -99,7 +96,7 @@ def cmd_sentry_usage(ctx):
                     date_str = timestamps[i][0:10]
                     count = error_group_data["series"][group][i]
                     click.echo(f"{date_str}: {count:,} errors")
-   
+
     except requests.exceptions.HTTPError as err:
         click.echo(f"Error fetching stats: {err}")
         click.echo(f"Response body: {err.response.text}")
