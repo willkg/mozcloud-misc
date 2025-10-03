@@ -103,14 +103,40 @@ def get_paged_data(session, url):
         url = link_header_next["url"]
 
 
+def generate_display_dsn(hide_dsn, dsn):
+    if hide_dsn:
+        # dsn is like:
+        # https://fb353b456839203894852929ed4b2687@o1069899.ingest.us.sentry.io/6250021
+        # and we want to convert that to:
+        # https://fb353XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.ingest.us.sentry.io/6250021
+        protocol, rest = dsn.split("//")
+        rest_parts = rest.split(".")
+        display_dsn = (
+            protocol
+            + "://"
+            + rest_parts[0][0:5]
+            + "X" * (len(rest_parts[0]) - 5)
+            + ".".join(rest_parts[1:])
+        )
+        return display_dsn
+    return dsn
+
+
 @click.command()
 @click.option(
-    "--fix/--no-fix",
+    "--hide-dsn/--no-hide-dsn",
+    "hide_dsn",
     default=False,
-    help="Whether to fix a project dsn rate limit when it's not set to our guidance."
+    help="Hide the DSN in output.",
+)
+@click.option(
+    "--fix/--no-fix",
+    "should_fix",
+    default=False,
+    help="Whether to fix a project dsn rate limit when it's not set to our guidance.",
 )
 @click.pass_context
-def cmd_sentry_audit(ctx, fix):
+def cmd_sentry_audit(ctx, hide_dsn, should_fix):
     """
     Audits Sentry project rate limits.
 
@@ -156,6 +182,7 @@ def cmd_sentry_audit(ctx, fix):
                 # 3. Loop through keys and check for rate limits
                 for key in keys:
                     dsn = key["dsn"]["public"]
+                    display_dsn = generate_display_dsn(hide_dsn, dsn)
 
                     rate_limit = key.get("rateLimit") or {}
                     if (
@@ -165,7 +192,7 @@ def cmd_sentry_audit(ctx, fix):
                         count = rate_limit["count"]
                         window = rate_limit["window"]
                         click.secho(
-                            f"{project_name}    {dsn}    enabled: ({count} / {window}s)",
+                            f"{project_name}    {display_dsn}    enabled: ({count} / {window}s)",
                             fg="green",
                         )
                         if count == COUNT and window == WINDOW:
@@ -174,14 +201,16 @@ def cmd_sentry_audit(ctx, fix):
                             count_nonstandard_ratelimit.append(project_name)
 
                     else:
-                        click.secho(f"{project_name}    {dsn}    disabled", fg="red")
+                        click.secho(f"{project_name}    {display_dsn}    disabled", fg="red")
                         count_no_ratelimit.append(project_name)
 
                     if (
-                        fix
+                        should_fix
                         and rate_limit.get("count") is None
                         and rate_limit.get("window") is None
                     ):
+                        click.echo(f"   fixing ratelimit: {project_name}    {display_dsn}")
+                        input("Ok?")
                         key_id = key["id"]
                         ratelimit_url = f"{SENTRY_API_URL}projects/{SENTRY_ORGANIZATION}/{project_slug}/keys/{key_id}/"
                         new_ratelimit = change_ratelimit(
@@ -194,13 +223,11 @@ def cmd_sentry_audit(ctx, fix):
                         )
                         click.secho(f"   new rate limit: enabled: ({new_ratelimit['count']} / {new_ratelimit['window']}s)")
                         fixed_ratelimit.append(project_slug)
-
-                        print(fixed_ratelimit)
-                        raise Exception()
-
+                        input("Good?")
 
         click.echo()
         click.echo(f"Projects: {len(count_projects)}")
+        click.echo("Ratelimit by DSN:")
         click.echo(f"* standard ratelimit: {len(count_standard_ratelimit)}")
         click.echo(f"* nonstandard ratelimit: {len(count_nonstandard_ratelimit)}")
         click.echo(f"* no ratelimit: {len(count_no_ratelimit)}")
