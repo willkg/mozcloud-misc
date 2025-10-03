@@ -8,29 +8,12 @@
 # ]
 # ///
 
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 """
 Shows last N days of Sentry error quota usage for the organization.
-
-
-API tokens
-==========
-
-Store tokens in a ``.env`` file in the local directory::
-
-    SENTRY_API_TOKEN=xxx
-
-Usage
-=====
-
-To use this:
-
-1. Set tokens in ``.env`` file.
-
-2. Run::
-
-      $ uv run sentry_error_usage.py [OPTIONS]
-
 """
 
 import os
@@ -54,6 +37,15 @@ SENTRY_TOKEN = os.getenv("SENTRY_API_TOKEN")
 @click.command()
 @click.pass_context
 def cmd_sentry_usage(ctx):
+    """
+    Shows last N days of Sentry error quota usage for the organization.
+
+    Create a Sentry API token and set this in the `.env` file:
+
+    \b
+    * SENTRY_API_TOKEN
+    """
+
     headers = {"Authorization": f"Bearer {SENTRY_TOKEN}"}
     params = {
         "statsPeriod": STATS_PERIOD,

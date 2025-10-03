@@ -10,9 +10,11 @@
 # ]
 # ///
 
-"""
-Usage: uv run offboard_user.py [EMAILPREFIX]
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+"""
 Goes through and lists which accounts that person owns across observability
 services.
 """
@@ -283,6 +285,18 @@ class DeadMansSnitchData:
 @click.command()
 @click.pass_context
 def main(ctx):
+    """
+    Goes through and lists which accounts that person owns across observability
+    services.
+
+    Create API tokens and set these in the `.env` file:
+
+    \b
+    * YARDSTICK_API_TOKEN
+    * SENTRY_API_TOKEN
+    * NEWRELIC_API_TOKEN_CORPORATE_PRIMARY
+    """
+
     providers = {
         "Yardstick": GrafanaData(
             url="https://yardstick.mozilla.org",

@@ -8,6 +8,9 @@
 # ]
 # ///
 
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 """
 Usage: uv run user_dashboards.py [USER]
@@ -35,6 +38,16 @@ GRAFANA_TOKEN = os.getenv("GRAFANA_TOKEN")
 @click.argument("user")
 @click.pass_context
 def main(ctx, verbose, user):
+    """
+    Lists all the dashboards specified user created or edited.
+
+    Create a Grafana API token and set these in the `.env` file:
+
+    \b
+    * GRAFANA_URL
+    * GRAFANA_TOKEN
+    """
+
     data_path = "data_grafana/dashboard_data.json"
     if not os.path.exists(data_path):
         data = []

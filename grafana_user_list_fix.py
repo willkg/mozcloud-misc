@@ -7,12 +7,12 @@
 # ]
 # ///
 
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 """
-Usage: uv run user_list_fix.py
-
 Reads a `user_list.tsv` file, fixes it, and displays fixed output.
-
-`user_list.tsv` is downloaded from the Grafana interface.
 """
 
 import click
@@ -38,6 +38,12 @@ def last_seen_sort_key(item):
 @click.command
 @click.pass_context
 def main(ctx):
+    """
+    Reads a `user_list.tsv` file, fixes it, and displays fixed output.
+
+    `user_list.tsv` is downloaded from the Grafana interface.
+    """
+
     with open("user_list.tsv", "r") as fp:
         lines = fp.readlines()
 

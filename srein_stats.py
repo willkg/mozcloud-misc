@@ -10,9 +10,11 @@
 # ]
 # ///
 
-"""
-Usage: uv run srein_stats.py [YEAR] [QUARTER]
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+"""
 Computes stats for the SREIN Jira project for the specified quarter.
 """
 
@@ -84,6 +86,16 @@ def percentile(values, nth):
 @click.argument("quarter")
 @click.pass_context
 def srein_statistics(ctx, year, quarter):
+    """
+    Computes stats for the SREIN Jira project for the specified quarter.
+
+    Create an API token in Jira and set these in the `.env` file:
+
+    \b
+    * JIRA_USERNAME
+    * JIRA_TOKEN
+    """
+
     year = int(year.strip())
     quarter = int(quarter.strip())
 
