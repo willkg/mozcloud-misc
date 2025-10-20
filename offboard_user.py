@@ -4,6 +4,7 @@
 # dependencies = [
 #     "click",
 #     "grafana_client",
+#     "prompt_toolkit",
 #     "python-dotenv",
 #     "requests",
 #     "rich",
@@ -24,6 +25,7 @@ import os
 import click
 from dotenv import load_dotenv
 from grafana_client import GrafanaApi, TokenAuth
+from prompt_toolkit import PromptSession
 import requests
 
 
@@ -308,8 +310,10 @@ def main(ctx):
         "DeadMansSnitch": DeadMansSnitchData("data_offboard/deadmanssnitch_users.csv"),
     }
 
+    prompt_session = PromptSession()
+
     while True:
-        to_offboard = click.prompt("Person to offboard")
+        to_offboard = prompt_session.prompt("Person to offboard: ")
         offboard = to_offboard.split(" ")
 
         for item in offboard:
