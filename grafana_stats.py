@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # /// script
-# requires-python = ">=3.8"
+# requires-python = ">=3.12"
 # dependencies = [
 #     "click",
 #     "grafana-client",
@@ -8,9 +8,14 @@
 # ]
 # ///
 
-# Generates rough stats so we have something to compare against.
-#
-# Usage: uv run grafana_stats.py > data_grafana/SOMEFILE
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+"""
+Generates rough stats so we have a snapshot of what's in Grafana
+to compare one period to another.
+"""
 
 import os
 
@@ -27,13 +32,27 @@ GRAFANA_TOKEN = os.getenv("GRAFANA_TOKEN")
 
 
 @click.command
+@click.option("--url", default=None)
+@click.option("--token", default=None)
 @click.pass_context
-def main(ctx):
-    click.echo(f"Using: {GRAFANA_URL}")
-    click.echo(f"Using: {'*' * (len(GRAFANA_TOKEN) - 4)}{GRAFANA_TOKEN[-4:]}")
-    grafana = GrafanaApi.from_url(
-        url=GRAFANA_URL, credential=TokenAuth(token=GRAFANA_TOKEN)
-    )
+def main(ctx, url, token):
+    """
+    Generates rough stats so we have a snapshot of what's in Grafana
+    to compare one period to another.
+
+    Create a Grafana API token and set these in the `.env` file:
+
+    \b
+    * GRAFANA_URL
+    * GRAFANA_TOKEN
+    """
+
+    url = url or GRAFANA_URL
+    token = token or GRAFANA_TOKEN
+
+    click.echo(f"Using: {url}")
+    click.echo(f"Using: {'*' * (len(token) - 4)}{token[-4:]}")
+    grafana = GrafanaApi.from_url(url=url, credential=TokenAuth(token=token))
 
     dashboards = grafana.search.search_dashboards()
     click.echo("grafana.search.search_dashboards()")
