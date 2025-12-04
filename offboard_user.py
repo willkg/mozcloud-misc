@@ -247,43 +247,6 @@ class SolarWindsData:
         return matched_users
 
 
-class DeadMansSnitchData:
-    def __init__(self, users_file):
-        self.users_file = users_file
-        self._users = []
-
-    def _get_users(self):
-        if not self._users:
-            with open(self.users_file, "r") as fp:
-                data = fp.readlines()
-
-            users = []
-            for line in data:
-                line = line.strip()
-                if line.startswith("#"):
-                    continue
-                # account, name, role, last_logged_in
-                fields = line.split(",")
-                users.append(
-                    {
-                        "case": fields[0],
-                        "name": fields[1],
-                        "account": fields[2],
-                    }
-                )
-            self._users = users
-
-        return self._users
-
-    def get_matches(self, pattern):
-        users = self._get_users()
-        matched_users = []
-        for user in users:
-            if pattern in user["account"]:
-                matched_users.append(f"{user['account']}: {user['case']}")
-        return matched_users
-
-
 @click.command()
 @click.pass_context
 def main(ctx):
@@ -307,7 +270,6 @@ def main(ctx):
         "Sentry": SentryData(url="https://sentry.io", token=SENTRY_API_TOKEN),
         "NewRelic": NewRelicData(token=NEWRELIC_API_TOKEN_CORPORATION_PRIMARY),
         "SolarWinds": SolarWindsData("data_offboard/solarwinds_users.csv"),
-        "DeadMansSnitch": DeadMansSnitchData("data_offboard/deadmanssnitch_users.csv"),
     }
 
     prompt_session = PromptSession()
