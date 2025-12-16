@@ -4,7 +4,6 @@
 # dependencies = [
 #     "click",
 #     "grafana_client",
-#     "prompt_toolkit",
 #     "python-dotenv",
 #     "requests",
 #     "rich",
@@ -24,7 +23,6 @@ import os
 
 import click
 from dotenv import load_dotenv
-from grafana_client import GrafanaApi, TokenAuth
 from prompt_toolkit import PromptSession
 import requests
 
@@ -33,6 +31,7 @@ load_dotenv()
 
 
 YARDSTICK_API_TOKEN = os.getenv("YARDSTICK_API_TOKEN")
+YARDSTICK_IAP_TOKEN = os.getenv("YARDSTICK_IAP_TOKEN")
 
 SENTRY_API_TOKEN = os.getenv("SENTRY_API_TOKEN")
 
@@ -42,35 +41,34 @@ NEWRELIC_API_TOKEN_CORPORATION_PRIMARY = os.getenv(
 
 
 class GrafanaData:
-    def __init__(self, url, token):
+    def __init__(self, url, token, iap_token):
         self.url = url
         self.token = token
+        self.iap_token = iap_token
         self._users = []
 
-    def get_user_count(self):
-        grafana = GrafanaApi.from_url(
-            url=self.url, credential=TokenAuth(token=self.token)
-        )
-        users = grafana.client.GET("/org/users")
-        return len(users)
+    def _get(self, url, path):
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Proxy-Authorization": f"Bearer {self.iap_token}",
+            "Content-Type": "application/json",
+        }
+        resp = requests.get(f"{url}{path}", headers=headers)
+        resp.raise_for_status()
+        return resp.json()
 
     def _get_teams_for_user(self, user_id):
         # FIXME(willkg): can't do this with a service account token--it
         # requires users:read which service account tokens don't have. there
         # doesn't seem to be a way to get the list of teams a user belongs to
         # with a service account token.
-        grafana = GrafanaApi.from_url(
-            url=self.url, credential=TokenAuth(token=self.token)
-        )
-        teams = grafana.client.GET(f"/users/{user_id}/teams")
+        teams = self._get(self.url, f"/api/users/{user_id}/teams")
         return [team["name"] for team in teams]
 
     def _get_users(self):
         if not self._users:
-            grafana = GrafanaApi.from_url(
-                url=self.url, credential=TokenAuth(token=self.token)
-            )
-            self._users = grafana.client.GET("/org/users")
+            self._users = self._get(self.url, "/api/org/users")
+
         return self._users
 
     def get_matches(self, pattern):
@@ -260,12 +258,30 @@ def main(ctx):
     * YARDSTICK_API_TOKEN
     * SENTRY_API_TOKEN
     * NEWRELIC_API_TOKEN_CORPORATE_PRIMARY
+
+    Before running this, you have to get the Yardstick IAP token:
+
+    \b
+    export YARDSTICK_IAP_TOKEN=$(gcloud auth print-identity-token \
+            --impersonate-service-account SERVICEACCOUNT \
+            --audiences CLIENTID --include-email)
+
+    Where:
+
+    \b
+    * SERVICEACCOUNT: the service account tied to Yardstick Prod IAP
+    * CLIENTID: the client id for Yardstick Prod IAP
+
+    IAP tokens expire after some time, so you have to re-up the token
+    periodically.
+
     """
 
     providers = {
         "Yardstick": GrafanaData(
             url="https://yardstick.mozilla.org",
             token=YARDSTICK_API_TOKEN,
+            iap_token=YARDSTICK_IAP_TOKEN,
         ),
         "Sentry": SentryData(url="https://sentry.io", token=SENTRY_API_TOKEN),
         "NewRelic": NewRelicData(token=NEWRELIC_API_TOKEN_CORPORATION_PRIMARY),
