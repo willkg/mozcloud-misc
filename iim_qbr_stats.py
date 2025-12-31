@@ -142,7 +142,6 @@ def iim_data(ctx, csv, year, quarter):
             click.echo(f"Error: IIM-{i}: {exc.status_code}: {exc.text}")
         i += 1
 
-
     # IIM issues declared this quarter; customfield_15087 is declare date
     incidents = []
     for issue in issue_data:
@@ -195,22 +194,13 @@ def iim_data(ctx, csv, year, quarter):
         severity_breakdown.setdefault(severity, []).append(incident)
         detected_breakdown.setdefault(detected_method, []).append(incident)
         if alerted is not None:
-            tt_alerted.append((alerted - impact_start).total_seconds())
+            tt_alerted.append((alerted - impact_start).total_seconds() / 60)
 
         if responded is not None:
-            tt_responded.append((responded - impact_start).total_seconds())
+            tt_responded.append((responded - impact_start).total_seconds() / 60)
 
         if mitigated is not None:
-            tt_mitigated.append((mitigated - impact_start).total_seconds())
-
-    # Convert seconds to minutes
-    tt_alerted = [elem / 60 for elem in tt_alerted]
-    tt_responded = [elem / 60 for elem in tt_responded]
-    tt_mitigated = [elem / 60 for elem in tt_mitigated]
-
-    # click.echo(f"alerted: {sum(tt_alerted)}  {[int(elem) for elem in tt_alerted]}")
-    # click.echo(f"responded: {sum(tt_responded)}  {[int(elem) for elem in tt_responded]}")
-    # click.echo(f"mitigated: {sum(tt_mitigated)}  {[int(elem) for elem in tt_mitigated]}")
+            tt_mitigated.append((mitigated - impact_start).total_seconds() / 60)
 
     click.echo(f"{date_start} to {date_end}")
     click.echo(f"Number incidents: {len(incidents)}")
