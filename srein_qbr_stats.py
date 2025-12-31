@@ -94,6 +94,7 @@ def srein_statistics(ctx, year, quarter):
     \b
     * JIRA_USERNAME
     * JIRA_TOKEN
+    * JIRA_URL
     """
 
     year = int(year.strip())
@@ -119,11 +120,9 @@ def srein_statistics(ctx, year, quarter):
 
     username = os.environ["JIRA_USERNAME"].strip()
     password = os.environ["JIRA_TOKEN"].strip()
+    url = os.environ["JIRA_URL"].strip()
 
-    jira_client = jira.JIRA(
-        server="https://mozilla-hub.atlassian.net/",
-        basic_auth=(username, password),
-    )
+    jira_client = jira.JIRA(server=url, basic_auth=(username, password))
 
     # NOTE(willkg): This is goofy. There isn't a good way to get a list of all
     # the issues. It's complicated by:

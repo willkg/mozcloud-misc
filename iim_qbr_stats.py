@@ -96,6 +96,7 @@ def iim_data(ctx, csv, year, quarter):
     \b
     * JIRA_USERNAME
     * JIRA_TOKEN
+    * JIRA_URL
     """
 
     year = int(year.strip())
@@ -121,11 +122,9 @@ def iim_data(ctx, csv, year, quarter):
 
     username = os.environ["JIRA_USERNAME"].strip()
     password = os.environ["JIRA_TOKEN"].strip()
+    url = os.environ["JIRA_URL"].strip()
 
-    jira_client = jira.JIRA(
-        server="https://mozilla-hub.atlassian.net/",
-        basic_auth=(username, password),
-    )
+    jira_client = jira.JIRA(server=url, basic_auth=(username, password))
 
     # FIXME(willkg): rework this to be a search
     issue_data = []
