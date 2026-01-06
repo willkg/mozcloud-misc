@@ -83,45 +83,58 @@ def get_arrow_time_or_none(incident, field, fieldname):
 
 @click.command()
 @click.option("--csv/--no-csv", default=False)
-@click.argument("year")
-@click.argument("quarter")
+@click.argument("period")
 @click.pass_context
-def iim_data(ctx, csv, year, quarter):
+def iim_data(ctx, csv, period):
     """
     Computes stats for the IIM Jira project for incidents declared in the
     specified quarter.
+
+    PERIOD can be one of:
+
+    \b
+    * "all" for all data
+    * "YYYY" for all the data in a specific year
+    * "YYYYqN" for all the data in a specific year and quarter
 
     Create an API token in Jira and set these in the `.env` file:
 
     \b
     * JIRA_USERNAME
-    * JIRA_TOKEN
+    * JIRA_PASSWORD
     * JIRA_URL
     """
 
-    year = int(year.strip())
-    quarter = int(quarter.strip())
+    period = period.strip()
+    if period == "all":
+        pass
+    elif "q" in period:
+        year, quarter = period.split("q")
 
-    if quarter == 1:
-        date_start = arrow.get(f"{year}-01-01 00:00:00")
-        date_end = arrow.get(f"{year}-03-31 23:59:59")
-    elif quarter == 2:
-        date_start = arrow.get(f"{year}-04-01 00:00:00")
-        date_end = arrow.get(f"{year}-06-30 23:59:59")
-    elif quarter == 3:
-        date_start = arrow.get(f"{year}-07-01 00:00:00")
-        date_end = arrow.get(f"{year}-09-30 23:59:59")
-    elif quarter == 4:
-        date_start = arrow.get(f"{year}-10-01 00:00:00")
-        date_end = arrow.get(f"{year}-12-31 23:59:59")
+        if quarter == 1:
+            date_start = arrow.get(f"{year}-01-01 00:00:00")
+            date_end = arrow.get(f"{year}-03-31 23:59:59")
+        elif quarter == 2:
+            date_start = arrow.get(f"{year}-04-01 00:00:00")
+            date_end = arrow.get(f"{year}-06-30 23:59:59")
+        elif quarter == 3:
+            date_start = arrow.get(f"{year}-07-01 00:00:00")
+            date_end = arrow.get(f"{year}-09-30 23:59:59")
+        elif quarter == 4:
+            date_start = arrow.get(f"{year}-10-01 00:00:00")
+            date_end = arrow.get(f"{year}-12-31 23:59:59")
+        else:
+            raise ValueError("quarter must be 1, 2, 3, or 4")
     else:
-        raise ValueError("quarter must be 1, 2, 3, or 4")
+        year = period
+        date_start = arrow.get(f"{year}-01-01 00:00:00")
+        date_end = arrow.get(f"{year}-12-31 23:59:59")
 
     if not os.path.exists(DATADIR):
         os.mkdir(DATADIR)
 
     username = os.environ["JIRA_USERNAME"].strip()
-    password = os.environ["JIRA_TOKEN"].strip()
+    password = os.environ["JIRA_PASSWORD"].strip()
     url = os.environ["JIRA_URL"].strip()
 
     jira_client = jira.JIRA(server=url, basic_auth=(username, password))
@@ -150,7 +163,7 @@ def iim_data(ctx, csv, year, quarter):
             click.echo(f"IIM-{issue.key}: declare date is none: {declare_date!r}")
             continue
 
-        if date_start <= arrow.get(declare_date) <= date_end:
+        if period == "all" or (date_start <= arrow.get(declare_date) <= date_end):
             incidents.append(issue)
 
     click.echo("Determining statistics data...")
@@ -202,7 +215,10 @@ def iim_data(ctx, csv, year, quarter):
         if mitigated is not None:
             tt_mitigated.append((mitigated - impact_start).total_seconds() / 60)
 
-    click.echo(f"{date_start} to {date_end}")
+    if period == "all":
+        click.echo("Looking at: all data")
+    else:
+        click.echo(f"Looking at: {date_start} to {date_end}")
     click.echo(f"Number incidents: {len(incidents)}")
     click.echo("By severity:")
     for key, val in sorted(severity_breakdown.items()):
@@ -232,7 +248,8 @@ def iim_data(ctx, csv, year, quarter):
                     continue
 
                 cols = [
-                    f"IIM-{incident.key}",
+                    f"https://mozilla-hub.atlassian.net/browse/{incident.key}",
+                    incident.fields.summary,
                     str(impact_start),
                     str(alerted),
                     str(responded),
