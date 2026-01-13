@@ -4,10 +4,8 @@
 # dependencies = [
 #     "click",
 #     "glom",
-#     "jira",
 #     "python-dotenv",
 #     "requests",
-#     "rich",
 # ]
 # ///
 
@@ -22,14 +20,13 @@ Retrieve IIM Jira project data as csv.
 import csv
 import json
 import os
-import re
+from typing import List, Dict, Optional, Union
 
 import click
 from dotenv import load_dotenv
 from glom import glom
-import jira
-from jira.resources import Issue
-from rich import print
+import requests
+from requests.auth import HTTPBasicAuth
 
 
 DATADIR = "iim_data"
@@ -38,28 +35,7 @@ DATADIR = "iim_data"
 load_dotenv()
 
 
-def fetch_issue_data(jira_client, issue_key):
-    cache_path = os.path.join(DATADIR, f"{issue_key}.json")
-    if os.path.exists(cache_path):
-        try:
-            with open(cache_path, "r") as fp:
-                data = json.load(fp)
-                issue = Issue(
-                    options=jira_client._options,
-                    session=jira_client._session,
-                    raw=data,
-                )
-                return issue
-        except Exception as exc:
-            print(exc)
-
-    issue = jira_client.issue(issue_key, expand="changelog")
-    with open(cache_path, "w") as fp:
-        json.dump(issue.raw, fp)
-    return issue
-
-
-def convert_datestamp(datestamp):
+def convert_datestamp(datestamp: str):
     """Drop the timezone and convert to google sheets friendly datestamp.
 
     2025-01-31T15:06:00.000-0500 -> 2025-01-31 15:06:00
@@ -71,25 +47,91 @@ def convert_datestamp(datestamp):
     return datestamp[0:10] + " " + datestamp[11:19]
 
 
-DOC_RE = re.compile("https://docs.google.com/document/d/[0-9_A-Za-z]+/edit")
+def get_all_issues_for_project(
+    jira_base_url: str,
+    project_key: str,
+    username: str,
+    password: str,
+    max_results: int = 100,
+    fields: Union[str, List[str]] = "*all",
+) -> List[Dict]:
+    """
+    Fetch all Jira issues for a given project key (Jira Cloud) using the
+    enhanced JQL search endpoint: GET /rest/api/3/search/jql.
+
+    Returns: list of issue JSON objects.
+    """
+    issues: List[Dict] = []
+    next_page_token: Optional[str] = None
+
+    auth = HTTPBasicAuth(username, password)
+    headers = {"Accept": "application/json"}
+
+    # Bounded JQL is recommended/required for some newer endpoints; ordering helps keep it stable.
+    jql = f'project = "{project_key}" and issueType = "Incident" ORDER BY created ASC'
+
+    while True:
+        params = {
+            "jql": jql,
+            "maxResults": max_results,
+            "fields": fields,
+        }
+        if next_page_token:
+            params["nextPageToken"] = next_page_token
+
+        resp = requests.get(
+            f"{jira_base_url.rstrip('/')}/rest/api/3/search/jql",
+            headers=headers,
+            params=params,
+            auth=auth,
+            timeout=30,
+        )
+        resp.raise_for_status()
+
+        data = resp.json()
+        issues.extend(data.get("issues", []))
+
+        # Enhanced search pagination: stop when isLast == True, otherwise follow nextPageToken.
+        if data.get("isLast") is True:
+            break
+
+        next_page_token = data.get("nextPageToken")
+        if not next_page_token:
+            # Defensive: if Jira doesn't provide a token but also didn't say it's last, stop to avoid looping.
+            break
+
+    return issues
 
 
-def extract_doc(incident):
-    # If there is a web link, that's preferred.
-    # FIXME
+def extract_doc(incident: dict):
+    def is_doc(url):
+        return url and url.startswith("https://docs.google.com/document")
 
-    # The description value is in Markdown. This value is in Markdown. If they
-    # used a Jira "chip", then the Markdown contains no document link at all.
-    description = glom(incident, "fields.description", default="no description")
-    match = DOC_RE.search(description)
-    if match is None:
-        return "no doc"
-    return match.group(0)
+    description = glom(incident, "fields.description", default={})
+
+    # Do a depth-first search with the assumption that the first doc listed is
+    # the incident report
+    content_nodes = description.get("content", [])
+    while content_nodes:
+        node = content_nodes.pop(0)
+        if node["type"] == "inlineCard" and is_doc(node["attrs"]["url"]):
+            return node["attrs"]["url"]
+        if node["type"] == "text":
+            marks = node.get("marks", [])
+            for mark in marks:
+                if mark["type"] != "link":
+                    continue
+                if is_doc(mark["attrs"]["href"]):
+                    return mark["attrs"]["href"]
+        content_nodes = node.get("content", []) + content_nodes
+
+    return "no doc"
 
 
 @click.command()
+@click.option("--cache/--no-cache", default=True)
 @click.pass_context
-def iim_data(ctx):
+def iim_data(ctx: click.Context, cache: bool):
     """
     Fetches IIM Jira project data.
 
@@ -106,22 +148,26 @@ def iim_data(ctx):
 
     username = os.environ["JIRA_USERNAME"].strip()
     password = os.environ["JIRA_PASSWORD"].strip()
-    url = os.environ["JIRA_URL"].strip()
-
-    jira_client = jira.JIRA(server=url, basic_auth=(username, password))
-
+    url = os.environ["JIRA_URL"].strip().rstrip("/")
     issue_data = []
-    consecutive_errors = 0
-    i = 1
-    click.echo("Fetching Jira data for IIM...")
-    while consecutive_errors < 20:
-        try:
-            issue_data.append(fetch_issue_data(jira_client, f"IIM-{i}"))
-            consecutive_errors = 0
-        except jira.exceptions.JIRAError as exc:
-            consecutive_errors += 1
-            click.echo(f"Error: IIM-{i}: {exc.status_code}: {exc.text}")
-        i += 1
+
+    cache_path = os.path.join(DATADIR, "iim_issue_data.json")
+    if cache:
+        if os.path.exists(cache_path):
+            with open(cache_path, "r") as fp:
+                issue_data = json.load(fp)
+
+    if not issue_data:
+        issue_data = get_all_issues_for_project(
+            jira_base_url=url,
+            project_key="IIM",
+            username=username,
+            password=password,
+        )
+
+    # Always dump to cache
+    with open(cache_path, "w") as fp:
+        json.dump(issue_data, fp)
 
     with open("iim_incidents.csv", "w") as fp:
         csv_file = csv.writer(fp)
@@ -160,37 +206,58 @@ def iim_data(ctx):
         # }
         for issue in issue_data:
             if glom(issue, "fields.issuetype.name", default="") != "Incident":
-               continue
+                continue
 
             csv_file.writerow(
                 [
-                    url + "browse/" + glom(issue, "key"),
+                    url + "/browse/" + glom(issue, "key"),
                     glom(issue, "fields.summary", default="no summary"),
                     extract_doc(issue),
                     # severity
-                    glom(issue, "fields.customfield_10319.value", default="no severity"),
+                    glom(
+                        issue, "fields.customfield_10319.value", default="no severity"
+                    ),
                     glom(issue, "fields.status.name", default="no status"),
                     # detected
-                    glom(issue, "fields.customfield_12881.value", default="no detection method"),
+                    glom(
+                        issue,
+                        "fields.customfield_12881.value",
+                        default="no detection method",
+                    ),
                     # services
                     ", ".join(
                         [
-                            service.value
-                            for service in (glom(issue, "fields.customfield_12880", default=None) or [])
+                            service["value"]
+                            for service in (
+                                glom(issue, "fields.customfield_12880", default=None)
+                                or []
+                            )
                         ]
                     ),
                     # detected
-                    convert_datestamp(glom(issue, "fields.customfield_12882", default="")),
+                    convert_datestamp(
+                        glom(issue, "fields.customfield_12882", default="")
+                    ),
                     # alerted
-                    convert_datestamp(glom(issue, "fields.customfield_12883", default="")),
+                    convert_datestamp(
+                        glom(issue, "fields.customfield_12883", default="")
+                    ),
                     # acknowledged
-                    convert_datestamp(glom(issue, "fields.customfield_12884", default="")),
+                    convert_datestamp(
+                        glom(issue, "fields.customfield_12884", default="")
+                    ),
                     # responded
-                    convert_datestamp(glom(issue, "fields.customfield_12885", default="")),
+                    convert_datestamp(
+                        glom(issue, "fields.customfield_12885", default="")
+                    ),
                     # mitigated
-                    convert_datestamp(glom(issue, "fields.customfield_12886", default="")),
+                    convert_datestamp(
+                        glom(issue, "fields.customfield_12886", default="")
+                    ),
                     # resolved
-                    convert_datestamp(glom(issue, "fields.customfield_12887", default="")),
+                    convert_datestamp(
+                        glom(issue, "fields.customfield_12887", default="")
+                    ),
                     # number of actions
                     # FIXME(willkg): figure this out
                     "",
