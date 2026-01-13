@@ -4,6 +4,7 @@
 # dependencies = [
 #     "click",
 #     "grafana_client",
+#     "prompt_toolkit",
 #     "python-dotenv",
 #     "requests",
 #     "rich",
@@ -34,10 +35,6 @@ YARDSTICK_API_TOKEN = os.getenv("YARDSTICK_API_TOKEN")
 YARDSTICK_IAP_TOKEN = os.getenv("YARDSTICK_IAP_TOKEN")
 
 SENTRY_API_TOKEN = os.getenv("SENTRY_API_TOKEN")
-
-NEWRELIC_API_TOKEN_CORPORATION_PRIMARY = os.getenv(
-    "NEWRELIC_API_TOKEN_CORPORATION_PRIMARY"
-)
 
 
 class GrafanaData:
@@ -158,52 +155,6 @@ class SentryData:
         return matched_users
 
 
-class NewRelicData:
-    def __init__(self, token):
-        self.token = token
-        self._users = []
-
-    def _get_users(self):
-        if not self._users:
-            url = "https://api.newrelic.com/graphql"
-            headers = {
-                "Content-Type": "application/json",
-                "API-Key": self.token,
-            }
-            # This (probably) gets all the accounts and account types
-            query = '{ "query": "{ actor { organization { userManagement { authenticationDomains { authenticationDomains { users { users { id name email lastActive type { displayName id } } } } } } } } }" }'
-
-            resp = requests.post(url, headers=headers, data=query)
-            if "errors" in resp.json():
-                click.echo(resp.status_code)
-                click.echo(resp.json())
-                raise Exception("New Relic API raised error")
-
-            deeply_nested_user_data = resp.json()["data"]["actor"]["organization"][
-                "userManagement"
-            ]["authenticationDomains"]["authenticationDomains"][0]["users"]["users"]
-
-            users = []
-            for user in deeply_nested_user_data:
-                users.append(
-                    {
-                        "account": user["email"],
-                        "name": user["name"],
-                        "type": user["type"]["displayName"],
-                    }
-                )
-            self._users = users
-        return self._users
-
-    def get_matches(self, pattern):
-        matched_users = []
-        users = self._get_users()
-        for user in users:
-            if pattern in user["account"]:
-                matched_users.append(f"{user['account']}: {user['type']}")
-        return matched_users
-
-
 class SolarWindsData:
     def __init__(self, users_file):
         self.users_file = users_file
@@ -257,7 +208,6 @@ def main(ctx):
     \b
     * YARDSTICK_API_TOKEN
     * SENTRY_API_TOKEN
-    * NEWRELIC_API_TOKEN_CORPORATE_PRIMARY
 
     Before running this, you have to get the Yardstick IAP token:
 
@@ -284,7 +234,6 @@ def main(ctx):
             iap_token=YARDSTICK_IAP_TOKEN,
         ),
         "Sentry": SentryData(url="https://sentry.io", token=SENTRY_API_TOKEN),
-        "NewRelic": NewRelicData(token=NEWRELIC_API_TOKEN_CORPORATION_PRIMARY),
         "SolarWinds": SolarWindsData("data_offboard/solarwinds_users.csv"),
     }
 
