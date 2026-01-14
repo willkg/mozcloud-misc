@@ -27,7 +27,43 @@ It prints out all the services it checked and whether there were accounts and pr
 
 The `data_offboard/solarwinds_users.csv` file is built manually by copying and pasting from the ui. It stinks. We don't have to do it often because we don't create new accounts very often (if ever).
 
-The `data_offboard/deadmanssnitch_users.csv` file is also built manually by copying and pasting from the ui. It's not bad--takes about 10 minutes. We don't often add new accounts, so this is largely static.
+
+## QBR scripts
+
+### docs_qbr_stats
+
+```shell
+uv run docs_qbr_stats.py YYYY QQ
+```
+
+Generates QBR stats for documentation in Confluence.
+
+Determines total pages as of when it's being run--can't look back in time. Determines number edited this quarter metric by looking at history of the pages that exist at the time this is being run.
+
+Requires a Confluence API token.
+
+
+### srein_qbr_stats
+
+```shell
+uv run srein_qbr_stats.py YYYY QQ
+```
+
+Generates QBR stats for SREIN Jira project.
+
+Requires Jira API token.
+
+
+### iim_qbr_stats
+
+```shell
+uv run iim_qbr_stats.py YYYY QQ
+```
+
+Generates QBR stats for Incident Management Program which has data in the IIM Jira project.
+
+Requires Jira API token.
+
 
 ## Yardstick/Grafana scripts
 
@@ -60,6 +96,7 @@ uv run grafana_user_list_fix.py
 ```
 
 Takes a `user_list.tsv` file downloaded from Grafana, fixes it, and displays the output.
+
 
 ## Sentry scripts
 
