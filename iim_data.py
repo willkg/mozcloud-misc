@@ -2,6 +2,7 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
+#     "arrow",
 #     "click",
 #     "glom",
 #     "python-dotenv",
@@ -20,8 +21,10 @@ Retrieve IIM Jira project data as csv.
 import csv
 import json
 import os
+import statistics
 from typing import List, Dict, Optional, Union
 
+import arrow
 import click
 from dotenv import load_dotenv
 from glom import glom
@@ -33,6 +36,16 @@ DATADIR = "iim_data"
 
 
 load_dotenv()
+
+
+def get_timestamp(issue, field, fieldname):
+    value = glom(issue, f"fields.{field}", default="")
+    if value is None:
+        click.echo(f"Error: {issue['key']}: has no {fieldname}: {value!r}")
+    else:
+        value = arrow.get(value)
+
+    return value
 
 
 def convert_datestamp(datestamp: str):
@@ -169,6 +182,30 @@ def iim_data(ctx: click.Context, cache: bool):
     with open(cache_path, "w") as fp:
         json.dump(issue_data, fp)
 
+    def calc_tt(value, impact_start):
+        return None if value is None else ((value - impact_start).total_seconds() / 60)
+
+    # Normalize and fix data, calculate additional fields
+    for issue in issue_data:
+        impact_start = get_timestamp(issue, "customfield_15191", "impact start")
+
+        detection_method = glom(issue, "fields.customfield_12881.value", default="no detection method")
+        if detection_method == "Manual":
+            # Blank out detected, alerted, and acknowledged fields
+            issue["fields"]["customfield_12882"] = None
+            issue["fields"]["customfield_12883"] = None
+            issue["fields"]["customfield_12884"] = None
+
+        detected = get_timestamp(issue, "customfield_12882", "detected")
+        issue["ttd"] = calc_tt(detected, impact_start)
+        alerted = get_timestamp(issue, "customfield_12883", "alerted")
+        issue["tta"] = calc_tt(alerted, impact_start)
+        responded = get_timestamp(issue, "customfield_12885", "responded")
+        issue["ttr"] = calc_tt(responded, impact_start)
+        mitigated = get_timestamp(issue, "customfield_12886", "mitigated")
+        issue["ttm"] = calc_tt(mitigated, impact_start)
+
+    # Write data to CSV
     with open("iim_incidents.csv", "w") as fp:
         csv_file = csv.writer(fp)
 
@@ -178,16 +215,20 @@ def iim_data(ctx: click.Context, cache: bool):
                 "key",
                 "summary",
                 "incident doc",
-                "severity customfield_10319",
+                "severity (10319)",
                 "status",
-                "detected customfield_12881",
-                "services customfield_12880",
-                "detected",
-                "alerted",
-                "acknowledged",
-                "responded",
-                "mitigated",
-                "resolved",
+                "detection method (12881)",
+                "services (12880)",
+                "time detected (12882)",
+                "ttd",
+                "time alerted (12883)",
+                "tta",
+                "time acknowledged (12884)",
+                "time responded (12885)",
+                "ttr",
+                "time mitigated (12886)",
+                "ttm",
+                "time resolved (12887)",
                 "# actions",
                 "# completed actions",
             ]
@@ -218,7 +259,7 @@ def iim_data(ctx: click.Context, cache: bool):
                         issue, "fields.customfield_10319.value", default="no severity"
                     ),
                     glom(issue, "fields.status.name", default="no status"),
-                    # detected
+                    # detection_method
                     glom(
                         issue,
                         "fields.customfield_12881.value",
@@ -238,10 +279,12 @@ def iim_data(ctx: click.Context, cache: bool):
                     convert_datestamp(
                         glom(issue, "fields.customfield_12882", default="")
                     ),
+                    issue["ttd"],
                     # alerted
                     convert_datestamp(
                         glom(issue, "fields.customfield_12883", default="")
                     ),
+                    issue["tta"],
                     # acknowledged
                     convert_datestamp(
                         glom(issue, "fields.customfield_12884", default="")
@@ -250,10 +293,12 @@ def iim_data(ctx: click.Context, cache: bool):
                     convert_datestamp(
                         glom(issue, "fields.customfield_12885", default="")
                     ),
+                    issue["ttr"],
                     # mitigated
                     convert_datestamp(
                         glom(issue, "fields.customfield_12886", default="")
                     ),
+                    issue["ttm"],
                     # resolved
                     convert_datestamp(
                         glom(issue, "fields.customfield_12887", default="")
