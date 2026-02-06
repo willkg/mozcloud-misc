@@ -2,23 +2,11 @@
 <head>
   <title>{{ title }}</title>
   <style type="text/css">
-  /* --- Email-safe baseline --- */
-  :root {
-    --text: #1f2937;
-    --muted: #6b7280;
-    --border: #e5e7eb;
-    --header: #111827;
-    --bg: #ffffff;
-    --tableHead: #f3f4f6;
-    --rowAlt: #fafafa;
-    --link: #0b5fff;
-  }
-
   html, body {
     margin: 0;
     padding: 0;
-    background: var(--bg);
-    color: var(--text);
+    background: #ffffff;
+    color: #1f2937;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     font-size: 14px;
     line-height: 1.45;
@@ -34,9 +22,9 @@
   h1 {
     font-size: 16px;
     margin: 18px 0 10px;
-    color: var(--header);
+    color: #111827;
     letter-spacing: 0.2px;
-    border-top: 1px solid var(--border);
+    border-top: 1px solid #e5e7eb;
     padding-top: 14px;
   }
   h1:first-of-type {
@@ -48,19 +36,19 @@
   /* Paragraphs / meta */
   p {
     margin: 8px 0 14px;
-    color: var(--text);
+    color: #1f2937;
   }
   code {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
     font-size: 12px;
     background: #f8fafc;
-    border: 1px solid var(--border);
+    border: 1px solid #e5e7eb;
     padding: 1px 6px;
     border-radius: 6px;
   }
 
   a {
-    color: var(--link);
+    color: #0b5fff;
     text-decoration: none;
   }
   a:hover { text-decoration: underline; }
@@ -69,13 +57,6 @@
   table {
     width: 100%;
     border-collapse: collapse;
-    /*
-    border-spacing: 0;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
-    margin: 10px 0 18px;
-    */
   }
 
   /* Make the first table (your Summary severity counts) compact and “badge-like” */
@@ -86,19 +67,11 @@
 
   td {
     padding: 10px;
-    /* border-bottom: 1px solid var(--border); */
     border: 1px solid #e5e7eb;   /* ← THIS is what Gmail respects */
   }
 
   /* Zebra striping for long incident tables */
-  tr.row-even td { background-color: #fafafa; }
-
-  /* Last row cleanup */
-  /*
-     table tr:last-child td, table tr:last-child th {
-    border-bottom: 0;
-  }
-     */
+  tr.row-even td { background-color: #f5f5f5; }
 
   /* Make incident tables easier to scan:
      - keep ID/status compact
@@ -112,16 +85,9 @@
     white-space: nowrap;
   }
 
-  /*
-     table.incidents td:nth-child(1) { font-weight: 600; }
-  table.incidents td:nth-child(2) a { font-weight: 500; }
-  table.incidents td:nth-child(3) { font-weight: 500; }
-  table.incidents td:nth-child(4) { font-weight: 600; }
-  */
-
   table.incidents td:nth-child(5) {
     width: 100%;
-    color: var(--text);
+    color: #1f2937;
   }
 
   span.status {
@@ -156,9 +122,6 @@
     border-color: #A5FCA5;
   }
 
-  /* Email clients don't support :contains, so keep it neutral by default. */
-
-  /* --- Severity pills --- */
   span.sev {
     font-weight: 700;
     font-size: 12px;
@@ -176,7 +139,7 @@
     border-color: #FCA5A5;
   }
   span.sev.sev-S2 {
-    background: #FFEDD5;            /* light orange */
+    background: #FFDEAD;            /* light orange */
     color: #9A3412;                 /* dark orange */
     border-color: #FDBA74;
   }
@@ -193,7 +156,7 @@
 
   /* Footer text */
   body > p:last-of-type {
-    color: var(--muted);
+    color: #6b7280;
     font-size: 12px;
     margin-top: 16px;
   }
