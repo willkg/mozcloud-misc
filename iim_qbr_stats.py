@@ -82,10 +82,9 @@ def get_arrow_time_or_none(incident, field, fieldname):
 
 
 @click.command()
-@click.option("--csv/--no-csv", default=False)
 @click.argument("period")
 @click.pass_context
-def iim_data(ctx, csv, period):
+def iim_data(ctx, period):
     """
     Computes stats for the IIM Jira project for incidents declared in the
     specified quarter.
@@ -235,32 +234,6 @@ def iim_data(ctx, csv, period):
     click.echo(
         f"MTT mitigated:    {mitigated_mins:.2f} mins  {mitigated_mins / 60:.2f} hrs"
     )
-
-    if csv:
-        with open("iim_incidents.csv", "w") as fp:
-            for incident in incidents:
-                impact_start = get_arrow_time_or_none(incident, "customfield_15191", "impact start")
-                alerted = get_arrow_time_or_none(incident, "customfield_12883", "alerted")
-                responded = get_arrow_time_or_none(incident, "customfield_12885", "responded")
-                mitigated = get_arrow_time_or_none(incident, "customfield_12886", "mitigated")
-
-                if impact_start is None:
-                    continue
-
-                cols = [
-                    f"https://mozilla-hub.atlassian.net/browse/{incident.key}",
-                    incident.fields.summary,
-                    str(impact_start),
-                    str(alerted),
-                    str(responded),
-                    # in minutes
-                    responded and "%.2f" % ((responded - impact_start).total_seconds() / 60) or "",
-                    str(mitigated),
-                    # in minutes
-                    mitigated and "%.2f" % ((mitigated - impact_start).total_seconds() / 60) or "",
-                ]
-
-                fp.write(",".join(cols) + "\n")
 
 
 if __name__ == "__main__":

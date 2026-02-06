@@ -1,0 +1,251 @@
+<html>
+<head>
+  <title>{{ title }}</title>
+  <style type="text/css">
+  /* --- Email-safe baseline --- */
+  :root {
+    --text: #1f2937;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --header: #111827;
+    --bg: #ffffff;
+    --tableHead: #f3f4f6;
+    --rowAlt: #fafafa;
+    --link: #0b5fff;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  /* Constrain width for readability in email clients */
+  body {
+    padding: 20px;
+    max-width: 860px;
+  }
+
+  /* Headings */
+  h1 {
+    font-size: 16px;
+    margin: 18px 0 10px;
+    color: var(--header);
+    letter-spacing: 0.2px;
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+  }
+  h1:first-of-type {
+    border-top: 0;
+    padding-top: 0;
+    margin-top: 0;
+  }
+
+  /* Paragraphs / meta */
+  p {
+    margin: 8px 0 14px;
+    color: var(--text);
+  }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: 12px;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    padding: 1px 6px;
+    border-radius: 6px;
+  }
+
+  a {
+    color: var(--link);
+    text-decoration: none;
+  }
+  a:hover { text-decoration: underline; }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    /*
+    border-spacing: 0;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 10px 0 18px;
+    */
+  }
+
+  /* Make the first table (your Summary severity counts) compact and “badge-like” */
+  table.severity_breakdown {
+    width: auto;
+    max-width: 520px;
+  }
+
+  td {
+    padding: 10px;
+    /* border-bottom: 1px solid var(--border); */
+    border: 1px solid #e5e7eb;   /* ← THIS is what Gmail respects */
+  }
+
+  /* Zebra striping for long incident tables */
+  tr.row-even td { background-color: #fafafa; }
+
+  /* Last row cleanup */
+  /*
+     table tr:last-child td, table tr:last-child th {
+    border-bottom: 0;
+  }
+     */
+
+  /* Make incident tables easier to scan:
+     - keep ID/status compact
+     - allow description to breathe */
+  /* Applies to your incident tables because they only have TDs (no TH row). */
+  table.incidents td:nth-child(1), /* IIM-### */
+  table.incidents td:nth-child(2), /* report link */
+  table.incidents td:nth-child(3), /* S# */
+  table.incidents td:nth-child(4)  /* status */
+  {
+    white-space: nowrap;
+  }
+
+  /*
+     table.incidents td:nth-child(1) { font-weight: 600; }
+  table.incidents td:nth-child(2) a { font-weight: 500; }
+  table.incidents td:nth-child(3) { font-weight: 500; }
+  table.incidents td:nth-child(4) { font-weight: 600; }
+  */
+
+  table.incidents td:nth-child(5) {
+    width: 100%;
+    color: var(--text);
+  }
+
+  span.status {
+    font-weight: 700;
+    font-size: 12px;
+    line-height: 1;
+    display: inline-block;          /* allows pill shape */
+    vertical-align: middle;
+    padding: 4px 8px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  span.status.status-Detected {
+    background: #FEE2E2;            /* light red */
+    color: #991B1B;                 /* dark red */
+    border-color: #FCA5A5;
+  }
+  span.status.status-InProgress {
+    background: #FEE2E2;            /* light red */
+    color: #991B1B;                 /* dark red */
+    border-color: #FCA5A5;
+  }
+  span.status.status-Mitigated {
+    background: #FEF3C7;            /* light amber */
+    color: #92400E;                 /* dark amber */
+    border-color: #FCD34D;
+  }
+  span.status.status-Resolved {
+    background: #E2FeE2;            /* light green */
+    color: #1B991B;                 /* dark green */
+    border-color: #A5FCA5;
+  }
+
+  /* Email clients don't support :contains, so keep it neutral by default. */
+
+  /* --- Severity pills --- */
+  span.sev {
+    font-weight: 700;
+    font-size: 12px;
+    line-height: 1;
+    display: inline-block;          /* allows pill shape */
+    padding: 4px 8px;
+    vertical-align: middle;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  span.sev.sev-S1 {
+    background: #FEE2E2;            /* light red */
+    color: #991B1B;                 /* dark red */
+    border-color: #FCA5A5;
+  }
+  span.sev.sev-S2 {
+    background: #FFEDD5;            /* light orange */
+    color: #9A3412;                 /* dark orange */
+    border-color: #FDBA74;
+  }
+  span.sev.sev-S3 {
+    background: #FEF3C7;            /* light amber */
+    color: #92400E;                 /* dark amber */
+    border-color: #FCD34D;
+  }
+  span.sev.sev-S4 {
+    background: #E0E7FF;            /* light indigo */
+    color: #3730A3;                 /* dark indigo */
+    border-color: #A5B4FC;
+  }
+
+  /* Footer text */
+  body > p:last-of-type {
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 16px;
+  }
+  </style>
+</head>
+<body>
+  <p>Weekly incident report from {{ last_friday }} to {{ this_friday }}.
+  <h1>Summary</h1>
+  <p>
+    There were {{ num_incidents }} incidents in the last week.
+  </p>
+  <table class="severity_breakdown">
+    <tr>
+      <td><span class="sev sev-S1">S1</span></td>
+      <td>{{ num_s1_incidents }}</td>
+      <td><span class="sev sev-S2">S2</span></td>
+      <td>{{ num_s2_incidents }}</td>
+      <td><span class="sev sev-S3">S3</span></td>
+      <td>{{ num_s3_incidents }}</td>
+      <td><span class="sev sev-S4">S4</span></td>
+      <td>{{ num_s4_incidents }}</td>
+    </tr>
+  </table>
+      
+  <h1>New Incidents declared since {{ last_friday }}</h1>
+  <table class="incidents">
+    {% for item in new_incidents | sort(attribute="severity") %}
+      <tr class="row-{{ loop.cycle('odd', 'even') }}">
+        <td><a href="{{ item['jira_url'] }}">{{ item['key'] }}</a></td>
+        <td><a href="{{ item['report_url'] }}">report</a></td>
+        <td><span class="sev sev-{{ item['severity'] }}">{{ item['severity'] }}</span></td>
+        <td><span class="status status-{{ item['status'].replace(' ', '') }}">{{ item['status'] }}</span></td>
+        <td>{{ item['summary'] }}</td>
+      </tr>
+    {% endfor %}
+  </table>
+
+  <h1>Active Incidents</h1>
+  <table class="incidents">
+    {% for item in active_incidents | sort(attribute="severity") %}
+      <tr class="row-{{ loop.cycle('odd', 'even') }}">
+        <td><a href="{{ item['jira_url'] }}">{{ item['key'] }}</a></td>
+        <td><a href="{{ item['report_url'] }}">report</a></td>
+        <td><span class="sev sev-{{ item['severity'] }}">{{ item['severity'] }}</span></td>
+        <td><span class="status status-{{ item['status'].replace(' ', '') }}">{{ item['status'] }}</span></td>
+        <td>{{ item['summary'] }}</td>
+      </tr>
+    {% endfor %}
+  </table>
+
+  <p>
+    Generated with <code>iim_weekly_report.py</code> by Incident Program Committee.
+  </p>
+</body>
+</html>

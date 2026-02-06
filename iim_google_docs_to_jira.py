@@ -252,7 +252,7 @@ def iim_google_docs_to_jira(ctx: click.Context, commit: bool):
         "summary": incident["fields"]["summary"],
         "severity": incident["fields"]["customfield_10319"],
         "impact start": incident["fields"]["customfield_15191"],
-        "detection method": incident["fields"]["customfield_12881"],
+        "detection method": incident["fields"]["customfield_12881"]["value"],
         "detected": incident["fields"]["customfield_12882"],
         "alerted": incident["fields"]["customfield_12883"],
         "acknowledged": incident["fields"]["customfield_12884"],
