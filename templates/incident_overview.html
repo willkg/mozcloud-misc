@@ -78,14 +78,13 @@
      - allow description to breathe */
   /* Applies to your incident tables because they only have TDs (no TH row). */
   table.incidents td:nth-child(1), /* IIM-### */
-  table.incidents td:nth-child(2), /* report link */
-  table.incidents td:nth-child(3), /* S# */
-  table.incidents td:nth-child(4)  /* status */
+  table.incidents td:nth-child(2), /* S# */
+  table.incidents td:nth-child(3)  /* status */
   {
     white-space: nowrap;
   }
 
-  table.incidents td:nth-child(5) {
+  table.incidents td:nth-child(4) {   /* summary */
     width: 100%;
     color: #1f2937;
   }
@@ -166,7 +165,11 @@
   <p>Weekly incident report from {{ last_friday }} to {{ this_friday }}.
   <h1>Summary</h1>
   <p>
-    There were {{ num_incidents }} incidents in the last week.
+    {% if num_incidents == 1 %}
+      There was {{ num_incidents }} incident in the last week.
+    {% else %}
+      There were {{ num_incidents }} incidents in the last week.
+    {% endif %}
   </p>
   <table class="severity_breakdown">
     <tr>
@@ -181,31 +184,59 @@
     </tr>
   </table>
       
-  <h1>New Incidents declared since {{ last_friday }}</h1>
-  <table class="incidents">
-    {% for item in new_incidents | sort(attribute="severity") %}
-      <tr class="row-{{ loop.cycle('odd', 'even') }}">
-        <td><a href="{{ item['jira_url'] }}">{{ item['key'] }}</a></td>
-        <td><a href="{{ item['report_url'] }}">report</a></td>
-        <td><span class="sev sev-{{ item['severity'] }}">{{ item['severity'] }}</span></td>
-        <td><span class="status status-{{ item['status'].replace(' ', '') }}">{{ item['status'] }}</span></td>
-        <td>{{ item['summary'] }}</td>
+  <h1>New incidents declared in the last week ({{ new_incidents | length }})</h1>
+  {% if new_incidents %}
+    <table class="incidents">
+      <tr>
+        <th>Jira</th>
+        <th>Severity</th>
+        <th>Status</th>
+        <th>Summary</th>
       </tr>
-    {% endfor %}
-  </table>
+      {% for item in new_incidents | sort(attribute="severity") %}
+        <tr class="row-{{ loop.cycle('odd', 'even') }}">
+          <td><a href="{{ item['jira_url'] }}">{{ item['key'] }}</a></td>
+          <td><span class="sev sev-{{ item['severity'] }}">{{ item['severity'] }}</span></td>
+          <td><span class="status status-{{ item['status'].replace(' ', '') }}">{{ item['status'] }}</span></td>
+          <td><a href="{{ item['report_url'] }}">{{ item['summary'] }}</a></td>
+        </tr>
+      {% endfor %}
+    </table>
+    <p>
+      <a href="{{ new_incidents_link }}">See these incidents in Jira</a>
+    </p>
+  {% else %}
+    <p>
+      There were no incidents.
+    </p>
+  {% endif %}
 
-  <h1>Active Incidents</h1>
-  <table class="incidents">
-    {% for item in active_incidents | sort(attribute="severity") %}
-      <tr class="row-{{ loop.cycle('odd', 'even') }}">
-        <td><a href="{{ item['jira_url'] }}">{{ item['key'] }}</a></td>
-        <td><a href="{{ item['report_url'] }}">report</a></td>
-        <td><span class="sev sev-{{ item['severity'] }}">{{ item['severity'] }}</span></td>
-        <td><span class="status status-{{ item['status'].replace(' ', '') }}">{{ item['status'] }}</span></td>
-        <td>{{ item['summary'] }}</td>
+  <h1>Active incidents ({{ active_incidents | length }})</h1>
+  {% if active_incidents %}
+    <table class="incidents">
+      <tr>
+        <th>Jira</th>
+        <th>Severity</th>
+        <th>Status</th>
+        <th>Summary</th>
       </tr>
-    {% endfor %}
-  </table>
+      {% for item in active_incidents | sort(attribute="severity") %}
+        <tr class="row-{{ loop.cycle('odd', 'even') }}">
+          <td><a href="{{ item['jira_url'] }}">{{ item['key'] }}</a></td>
+          <td><span class="sev sev-{{ item['severity'] }}">{{ item['severity'] }}</span></td>
+          <td><span class="status status-{{ item['status'].replace(' ', '') }}">{{ item['status'] }}</span></td>
+          <td><a href="{{ item['report_url'] }}">{{ item['summary'] }}</a></td>
+        </tr>
+      {% endfor %}
+    </table>
+    <p>
+      <a href="{{ active_incidents_link }}">See these incidents in Jira</a>
+    </p>
+  {% else %}
+    <p>
+      There are no active incidents.
+    </p>
+  {% endif %}
 
   <p>
     Generated with <code>iim_weekly_report.py</code> by Incident Program Committee.

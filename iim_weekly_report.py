@@ -23,6 +23,7 @@ Computes a weekly report for incidents.
 
 import json
 import os
+import urllib.parse
 
 import arrow
 import click
@@ -104,6 +105,15 @@ def get_arrow_time_or_none(incident, field, fieldname):
     return value
 
 
+def generate_jira_link(incident_keys):
+    base = "https://mozilla-hub.atlassian.net/jira/software/c/projects/IIM/issues?"
+    keys = ",".join(incident_keys)
+    params = {
+        "jql": f"project = IIM AND issuetype = Incident AND key in ({keys})"
+    }
+    return base + urllib.parse.urlencode(params)
+
+
 @click.command()
 @click.pass_context
 def iim_weekly_report(ctx):
@@ -135,7 +145,7 @@ def iim_weekly_report(ctx):
     new_incidents = [
         incident for incident in incidents
         if (
-            incident["declare date"][0:11] > last_friday
+            incident["declare date"][0:11] >= last_friday
             and incident["declare date"][0:11] <= this_friday
         )
     ]
@@ -151,9 +161,9 @@ def iim_weekly_report(ctx):
         autoescape=select_autoescape()
     )
 
-    template = env.get_template("weekly_report.html")
+    template = env.get_template("incident_overview.html")
     html = template.render(
-        title=f"Weekly Incident Report: {this_friday}",
+        title=f"Weekly Incident Overview: {this_friday}",
         this_friday=this_friday,
         last_friday=last_friday,
         num_incidents=len(new_incidents),
@@ -162,12 +172,17 @@ def iim_weekly_report(ctx):
         num_s3_incidents=severity_breakdown.get("S3", 0),
         num_s4_incidents=severity_breakdown.get("S4", 0),
         new_incidents=new_incidents,
+        new_incidents_link=generate_jira_link([item["key"] for item in new_incidents]),
         active_incidents=active_incidents,
+        active_incidents_link=generate_jira_link([item["key"] for item in active_incidents]),
     )
     inliner = css_inline.CSSInliner()
     fixed_html = inliner.inline(html)
 
-    fn = f"weekly_incident_reports/report_{last_friday.format('YYYY-MM-DD').replace('-', '')}.html"
+    # NOTE(willkg): arrow only does YYYY-MM-DD. we can't get it to do YYYYMMDD
+    # or YYYY_MM_DD. it's unclear why.
+    file_friendly_date = last_friday.format("YYYY-MM-DD").replace("-", "")
+    fn = f"incident_overviews/incident_overview_{file_friendly_date}.html"
     with open(fn, "w") as fp:
         fp.write(fixed_html)
 
