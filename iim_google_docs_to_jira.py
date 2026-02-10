@@ -3,6 +3,7 @@
 # requires-python = ">=3.13"
 # dependencies = [
 #     "click",
+#     "glom",
 #     "python-dotenv",
 #     "requests",
 #     "rich",
@@ -25,6 +26,7 @@ from typing import Dict
 
 import click
 from dotenv import load_dotenv
+from glom import glom
 import requests
 from requests.auth import HTTPBasicAuth
 import rich
@@ -252,7 +254,7 @@ def iim_google_docs_to_jira(ctx: click.Context, commit: bool):
         "summary": incident["fields"]["summary"],
         "severity": incident["fields"]["customfield_10319"],
         "impact start": incident["fields"]["customfield_15191"],
-        "detection method": incident["fields"]["customfield_12881"]["value"],
+        "detection method": glom(incident, "fields.customfield_12881.value", default=None),
         "detected": incident["fields"]["customfield_12882"],
         "alerted": incident["fields"]["customfield_12883"],
         "acknowledged": incident["fields"]["customfield_12884"],
