@@ -16,7 +16,8 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 """
-Computes a weekly report for incidents.
+Computes a list of recently resolved incidents and a list of active incidents
+based on Jira data from `iim_data.py`.
 """
 
 import json
@@ -114,10 +115,10 @@ def generate_jira_link(incident_keys):
 
 @click.command()
 @click.pass_context
-def iim_weekly_report(ctx):
+def iim_active(ctx):
     """
-    Computes a weekly report based on Jira data. Make sure to update the data
-    in Jira and then run `iim_data.py` before running the report.
+    Computes a list of recently resolved incidents and a list of active
+    incidents based on Jira data from `iim_data.py`.
 
     Create an API token in Jira and set these in the `.env` file:
 
@@ -138,29 +139,27 @@ def iim_weekly_report(ctx):
     # shift to last week, floor('week') gets monday, shift 4 days to friday
     two_weeks_ago = arrow.now().shift(days=-14).format("YYYY-MM-DD")
 
+    resolved_incidents = [item for item in incidents if item["resolved"] and item["resolved"] > two_weeks_ago]
     click.echo()
-    click.echo("# Recently resolved incidents:")
+    click.echo(f"# Recently resolved incidents ({len(resolved_incidents)}):")
     click.echo()
+    for incident in resolved_incidents:
+        rich.print(f"{incident['key']}  {incident['summary']}")
+        rich.print(incident["resolved"])
+        rich.print(incident["jira_url"])
+        rich.print(incident["report_url"])
+        click.echo()
 
-    for incident in incidents:
-        if incident["resolved"] and incident["resolved"] > two_weeks_ago:
-            rich.print(f"{incident['key']}  {incident['summary']}")
-            rich.print(incident["resolved"])
-            rich.print(incident["jira_url"])
-            rich.print(incident["report_url"])
-            click.echo()
-
+    active_incidents = [item for item in incidents if item["status"] != "Resolved"]
     click.echo()
-    click.echo("# Active incidents:")
+    click.echo(f"# Active incidents ({len(active_incidents)}):")
     click.echo()
-
-    for incident in incidents:
-        if incident["status"] != "Resolved":
-            rich.print(f"{incident['key']}  {incident['summary']}")
-            rich.print(incident["jira_url"])
-            rich.print(incident["report_url"])
-            click.echo()
+    for incident in active_incidents:
+        rich.print(f"{incident['key']}  {incident['summary']}")
+        rich.print(incident["jira_url"])
+        rich.print(incident["report_url"])
+        click.echo()
 
 
 if __name__ == "__main__":
-    iim_weekly_report()
+    iim_active()
