@@ -87,7 +87,73 @@ def get_issue_data(
     return response.json()
 
 
-def update_jira_issue(
+def update_jira_issue_status(
+    jira_base_url: str,
+    username: str,
+    password: str,
+    issue_key: str,
+    new_status: str,
+):
+    """
+    Update a Jira issue's status by transitioning it.
+
+    :raises requests.HTTPError: if the request fails
+    """
+    url = f"{jira_base_url.rstrip('/')}/rest/api/3/issue/{issue_key}/transitions"
+
+    auth = HTTPBasicAuth(username, password)
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+    }
+
+    # Step 1: Get available transitions
+    response = requests.get(
+        url,
+        headers=headers,
+        auth=auth,
+        timeout=30,
+    )
+
+    if response.status_code not in (200, 204):
+        response.raise_for_status()
+
+    transitions = response.json().get("transitions", [])
+
+    # Step 2: Find matching transition by status name
+    transition_id = None
+    for transition in transitions:
+        if transition["to"]["name"].lower() == new_status.lower():
+            transition_id = transition["id"]
+            break
+
+    if not transition_id:
+        available = [t["to"]["name"] for t in transitions]
+        raise ValueError(
+            f"Status '{new_status}' is not a valid transition for {issue_key}. "
+            f"Available transitions: {available}"
+        )
+
+    # Step 3: Perform transition
+    payload = {
+        "transition": {
+            "id": transition_id
+        }
+    }
+
+    response = requests.post(
+        url,
+        headers=headers,
+        json=payload,
+        auth=auth,
+        timeout=30,
+    )
+
+    if response.status_code not in (200, 204):
+        response.raise_for_status()
+
+
+def update_jira_issue_data(
     jira_base_url: str,
     username: str,
     password: str,
@@ -256,7 +322,15 @@ def metadata_table_to_dict(md):
     data["key"] = extract_jira_issue(md_table["issues"])
 
     # Status
-    data["status"] = md_table["status"].strip()
+    status = md_table["status"].strip()
+    # incident report has "please select", "ongoing", "mitigated", "resolved"
+    # Jira incident has "detected", "in progress", "mitigated", "resolved"
+    if status.lower() == "mitigated":
+        data["status"] = "Mitigated"
+    elif status.lower() == "resolved":
+        data["status"] = "Resolved"
+    else:
+        data["status"] = "In Progress"
 
     # Severity fields.customfield_10319
     if "S1 - Critical" in md_table["severity"]:
@@ -390,6 +464,12 @@ def iim_google_docs_to_jira(ctx: click.Context, commit: bool, docs: tuple[str, .
             table.add_column("current")
             table.add_column("new")
 
+            table.add_row(
+                "status",
+                incident["fields"]["status"]["name"],
+                new_data["status"],
+            )
+
             for name, field in (
                 ("summary", "summary"),
                 ("severity", "customfield_10319"),
@@ -419,7 +499,15 @@ def iim_google_docs_to_jira(ctx: click.Context, commit: bool, docs: tuple[str, .
                 click.echo("Ok to commit?")
                 input()
                 click.echo("Committing to Jira ...")
-                update_jira_issue(
+                if incident["fields"]["status"]["name"] != new_data["status"]:
+                    update_jira_issue_status(
+                        jira_base_url=url,
+                        username=username,
+                        password=password,
+                        issue_key=incident_key,
+                        new_status=new_data["status"],
+                    )
+                update_jira_issue_data(
                     jira_base_url=url,
                     username=username,
                     password=password,
