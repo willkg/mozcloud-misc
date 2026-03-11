@@ -21,7 +21,6 @@ Retrieve IIM Jira project data as csv.
 import csv
 import json
 import os
-import statistics
 from typing import List, Dict, Optional, Union
 
 import arrow
@@ -64,7 +63,7 @@ def get_all_issues_for_project(
     jira_base_url: str,
     project_key: str,
     username: str,
-    password: str,
+    token: str,
     max_results: int = 100,
     fields: Union[str, List[str]] = "*all",
 ) -> List[Dict]:
@@ -77,7 +76,7 @@ def get_all_issues_for_project(
     issues: List[Dict] = []
     next_page_token: Optional[str] = None
 
-    auth = HTTPBasicAuth(username, password)
+    auth = HTTPBasicAuth(username, token)
     headers = {"Accept": "application/json"}
 
     # Bounded JQL is recommended/required for some newer endpoints; ordering helps keep it stable.
@@ -152,7 +151,7 @@ def iim_data(ctx: click.Context, cache: bool):
 
     \b
     * JIRA_USERNAME
-    * JIRA_PASSWORD
+    * JIRA_TOKEN
     * JIRA_URL
     """
 
@@ -160,7 +159,7 @@ def iim_data(ctx: click.Context, cache: bool):
         os.mkdir(DATADIR)
 
     username = os.environ["JIRA_USERNAME"].strip()
-    password = os.environ["JIRA_PASSWORD"].strip()
+    token = os.environ["JIRA_TOKEN"].strip()
     url = os.environ["JIRA_URL"].strip().rstrip("/")
     issue_data = []
 
@@ -175,7 +174,7 @@ def iim_data(ctx: click.Context, cache: bool):
             jira_base_url=url,
             project_key="IIM",
             username=username,
-            password=password,
+            token=token,
         )
 
     # Always dump to cache
@@ -183,27 +182,27 @@ def iim_data(ctx: click.Context, cache: bool):
         json.dump(issue_data, fp)
 
     def calc_tt(value, impact_start):
-        return None if value is None else ((value - impact_start).total_seconds() / 60)
+        if not value or not impact_start:
+            return None
+        return (value - impact_start).total_seconds() / 60
 
     # Normalize and fix data, calculate additional fields
     for issue in issue_data:
-        impact_start = get_timestamp(issue, "customfield_15191", "impact start")
+        impact_start = get_timestamp(issue, "customfield_18693", "impact start")
 
-        detection_method = glom(issue, "fields.customfield_12881.value", default="no detection method")
-        if detection_method == "Manual":
-            # Blank out detected, alerted, and acknowledged fields
-            issue["fields"]["customfield_12882"] = None
-            issue["fields"]["customfield_12883"] = None
-            issue["fields"]["customfield_12884"] = None
-
-        detected = get_timestamp(issue, "customfield_12882", "detected")
-        issue["ttd"] = calc_tt(detected, impact_start)
-        alerted = get_timestamp(issue, "customfield_12883", "alerted")
-        issue["tta"] = calc_tt(alerted, impact_start)
-        responded = get_timestamp(issue, "customfield_12885", "responded")
-        issue["ttr"] = calc_tt(responded, impact_start)
-        mitigated = get_timestamp(issue, "customfield_12886", "mitigated")
-        issue["ttm"] = calc_tt(mitigated, impact_start)
+        declared = get_timestamp(issue, "customfield_18692", "declared")
+        if declared and declared > arrow.get("2025-09-15"):
+            issue["tt-dec"] = calc_tt(declared, impact_start)
+        else:
+            issue["tt-dec"] = ""
+        detected = get_timestamp(issue, "customfield_18694", "detected")
+        issue["tt-det"] = calc_tt(detected, impact_start)
+        alerted = get_timestamp(issue, "customfield_18695", "alerted")
+        issue["tt-alt"] = calc_tt(alerted, impact_start)
+        responded = get_timestamp(issue, "customfield_18697", "responded")
+        issue["tt-res"] = calc_tt(responded, impact_start)
+        mitigated = get_timestamp(issue, "customfield_18696", "mitigated")
+        issue["tt-mit"] = calc_tt(mitigated, impact_start)
 
     # Write data to CSV
     with open("iim_incidents.csv", "w") as fp:
@@ -218,33 +217,25 @@ def iim_data(ctx: click.Context, cache: bool):
                 "severity (10319)",
                 "status",
                 "detection method (12881)",
-                "services (12880)",
-                "time detected (12882)",
-                "ttd",
-                "time alerted (12883)",
-                "tta",
-                "time acknowledged (12884)",
-                "time responded (12885)",
-                "ttr",
-                "time mitigated (12886)",
-                "ttm",
-                "time resolved (12887)",
+                "entities (18555)",
+                "time declared (18692)",
+                "tt-dec",
+                "impact start (18693)",
+                "time detected (18694)",
+                "tt-det",
+                "time alerted (18695)",
+                "tt-alt",
+                "time acknowledged (18696)",
+                "time responded (18697)",
+                "tt-res",
+                "time mitigated (18698)",
+                "tt-mit",
+                "time resolved (18699)",
                 "# actions",
                 "# completed actions",
             ]
         )
 
-        # cf_map = {
-        #   "services": "customfield_12880",
-        #   "detection_method": "customfield_12881",
-        #   "severity": "customfield_10319",
-        #   "time_detected": "customfield_12882",
-        #   "time_alerted": "customfield_12883",
-        #   "time_acknowledge": "customfield_12884",
-        #   "time_responded": "customfield_12885",
-        #   "time_mitigated": "customfield_12886",
-        #   "time_resolved": "customfield_12887"
-        # }
         for issue in issue_data:
             if glom(issue, "fields.issuetype.name", default="") != "Incident":
                 continue
@@ -265,43 +256,44 @@ def iim_data(ctx: click.Context, cache: bool):
                         "fields.customfield_12881.value",
                         default="no detection method",
                     ),
-                    # services
-                    ", ".join(
-                        [
-                            service["value"]
-                            for service in (
-                                glom(issue, "fields.customfield_12880", default=None)
-                                or []
-                            )
-                        ]
+                    # entities
+                    glom(issue, "fields.customfield_18555", default=None),
+                    # declared
+                    convert_datestamp(
+                        glom(issue, "fields.customfield_18692", default="")
+                    ),
+                    issue["tt-dec"],
+                    # impact start
+                    convert_datestamp(
+                        glom(issue, "fields.customfield_18693", default=""),
                     ),
                     # detected
                     convert_datestamp(
-                        glom(issue, "fields.customfield_12882", default="")
+                        glom(issue, "fields.customfield_18694", default="")
                     ),
-                    issue["ttd"],
+                    issue["tt-det"],
                     # alerted
                     convert_datestamp(
-                        glom(issue, "fields.customfield_12883", default="")
+                        glom(issue, "fields.customfield_18695", default="")
                     ),
-                    issue["tta"],
+                    issue["tt-alt"],
                     # acknowledged
                     convert_datestamp(
-                        glom(issue, "fields.customfield_12884", default="")
+                        glom(issue, "fields.customfield_18696", default="")
                     ),
                     # responded
                     convert_datestamp(
-                        glom(issue, "fields.customfield_12885", default="")
+                        glom(issue, "fields.customfield_18697", default="")
                     ),
-                    issue["ttr"],
+                    issue["tt-res"],
                     # mitigated
                     convert_datestamp(
-                        glom(issue, "fields.customfield_12886", default="")
+                        glom(issue, "fields.customfield_18698", default="")
                     ),
-                    issue["ttm"],
+                    issue["tt-mit"],
                     # resolved
                     convert_datestamp(
-                        glom(issue, "fields.customfield_12887", default="")
+                        glom(issue, "fields.customfield_18699", default="")
                     ),
                     # number of actions
                     # FIXME(willkg): figure this out
