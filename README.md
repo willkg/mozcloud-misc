@@ -54,17 +54,6 @@ Generates QBR stats for SREIN Jira project.
 Requires Jira API token.
 
 
-### iim_qbr_stats
-
-```shell
-uv run iim_qbr_stats.py YYYY QQ
-```
-
-Generates QBR stats for Incident Management Program which has data in the IIM Jira project.
-
-Requires Jira API token.
-
-
 ## Yardstick/Grafana scripts
 
 ### grafana_stats
