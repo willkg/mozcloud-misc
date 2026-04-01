@@ -31,22 +31,30 @@ from jira.resources import Issue
 
 DATADIR = "srein_data"
 CLOUDENG_TEAM = [
-    "Brandon Patterson",
+    "Abhishek Aggarwal",
+    "Basma Asaad",
+    "Brandon Patterson",  # exited
     "Brandon Wells",
     "Brett Kochendorfer",
-    "Chris Valaas",
-    "Dustin Lactin",
+    "Cassandra Dymock",
+    "Chris Valaas",       # exited
+    "Dustin Lactin",      # exited
+    "Eric Maydeck",
     "Hamid Tahsildoost",
     "Hristo Ganchev",
+    "James Francis",
+    "Jason Thomas",
     "Jon Buckley",
     "Mikaël Ducharme",
     "Nate Tade",
     "Paul Hammer",
     "Rachel Pohl",
+    "Rachael Crook",
     "Robert Müller",
     "Steven Prokopienko",
     "Wei Zhou",
     "Wesley Dawson",
+    "Wil Stuckey",
     "William Kahn-Greene",
 ]
 
