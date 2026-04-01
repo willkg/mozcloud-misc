@@ -26,7 +26,6 @@ import arrow
 import click
 from dotenv import load_dotenv
 import requests
-from rich import print
 
 
 load_dotenv()
@@ -196,7 +195,7 @@ def main(ctx, year, quarter):
     child_pages = get_child_pages(
         base_url=os.environ["CONFLUENCE_URL"].strip(),
         username=os.environ["CONFLUENCE_USERNAME"].strip(),
-        token=os.environ["CONFLUENCE_PASSWORD"].strip(),
+        token=os.environ["CONFLUENCE_TOKEN"].strip(),
         page_id=page_id,
     )
     click.echo("Determining statistics data...")
