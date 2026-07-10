@@ -50,10 +50,7 @@ def get_child_pages(
 
     """
     base_url = base_url.rstrip("/")
-
-    # Cloud commonly uses /wiki; the API path includes it. If the user already
-    # provided a URL ending with /wiki, this still works.
-    api_root = f"{base_url}/rest/api"
+    api_root = f"{base_url}/wiki/rest/api"
 
     session = requests.Session()
     session.auth = (username, token)
