@@ -33,6 +33,7 @@ load_dotenv()
 
 YARDSTICK_API_TOKEN = os.getenv("YARDSTICK_API_TOKEN")
 YARDSTICK_IAP_TOKEN = os.getenv("YARDSTICK_IAP_TOKEN")
+YARDSTICK_BASE_URL = os.getenv("YARDSTICK_BASE_URL")
 
 SENTRY_API_TOKEN = os.getenv("SENTRY_API_TOKEN")
 
@@ -229,7 +230,7 @@ def main(ctx):
 
     providers = {
         "Yardstick": GrafanaData(
-            url="https://yardstick.mozilla.org",
+            url=YARDSTICK_BASE_URL.rstrip("/"),
             token=YARDSTICK_API_TOKEN,
             iap_token=YARDSTICK_IAP_TOKEN,
         ),
